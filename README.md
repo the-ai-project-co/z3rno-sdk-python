@@ -1,15 +1,15 @@
-# z3rno-sdk-python
+# z3rno (Python SDK)
 
-> The official Python SDK for Z3rno. A thin, typed HTTP client over `httpx` + `pydantic` that talks to `z3rno-server`. No database drivers, no embedding providers, no connection pools — all business logic is server-side.
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![CI](https://github.com/the-ai-project-co/z3rno-sdk-python/actions/workflows/ci.yml/badge.svg)](https://github.com/the-ai-project-co/z3rno-sdk-python/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/z3rno)](https://pypi.org/project/z3rno/)
 
-**License:** Apache 2.0
-**Status:** Early development — not yet on PyPI
-**Part of:** [Z3rno](https://github.com/the-ai-project-co) — the database for AI agent memory
+Python SDK for Z3rno -- thin HTTP client for the Z3rno memory API.
 
 ## Installation
 
 ```bash
-pip install z3rno  # (when published)
+pip install z3rno
 ```
 
 ## Quickstart
@@ -17,41 +17,67 @@ pip install z3rno  # (when published)
 ```python
 from z3rno import Z3rnoClient
 
-client = Z3rnoClient(
-    base_url="https://api.z3rno.dev",  # or your self-hosted z3rno-server
-    api_key="z3rno_sk_...",
-)
-
-# Store a memory
-memory = client.store(
-    agent_id="agent-1",
-    content="User prefers dark mode and uses Python.",
-    memory_type="semantic",
-)
-
-# Recall memories
-results = client.recall(
-    agent_id="agent-1",
-    query="What does the user prefer?",
-    top_k=5,
-)
+client = Z3rnoClient(base_url="https://api.z3rno.dev", api_key="z3rno_sk_...")
+memory = client.store(agent_id="agent-1", content="User prefers dark mode", memory_type="semantic")
+results = client.recall(agent_id="agent-1", query="What does the user prefer?", top_k=5)
+client.forget(memory_id=memory.id)
 ```
 
-An `AsyncZ3rnoClient` is also exported for async codebases.
+## Async Usage
 
-## Design
+```python
+from z3rno import AsyncZ3rnoClient
 
-- **Thin HTTP client.** The only runtime dependencies are `httpx`, `pydantic`, and `tenacity`. No `psycopg`, no database driver.
-- **Generated from OpenAPI.** The Pydantic models mirror the `z3rno-server` OpenAPI 3.1 spec exactly.
-- **Typed errors.** `Z3rnoRateLimitError`, `Z3rnoAuthenticationError`, `Z3rnoValidationError`, etc. — each wraps a specific HTTP status.
-- **Retry policy.** Exponential backoff on connection errors and 5xx. `Retry-After` honoured on 429.
+async def main():
+    async with AsyncZ3rnoClient(base_url="https://api.z3rno.dev", api_key="z3rno_sk_...") as client:
+        memory = await client.store(agent_id="agent-1", content="User prefers dark mode")
+        results = await client.recall(agent_id="agent-1", query="preferences")
+        await client.forget(memory_id=memory.id)
+```
 
-## Framework integrations
+## Methods
+
+| Method | Description |
+|--------|-------------|
+| `store(...)` | Store a new memory with optional type, metadata, relationships, TTL, and importance |
+| `recall(...)` | Recall memories by semantic similarity query |
+| `forget(...)` | Soft-delete a memory by ID |
+| `audit(...)` | Query the audit trail with optional filters and pagination |
+
+All methods are available on both `Z3rnoClient` (sync) and `AsyncZ3rnoClient` (async).
+
+## Features
+
+- **Thin HTTP client** -- only `httpx`, `pydantic`, and `tenacity` at runtime. No database drivers.
+- **Typed errors** -- `Z3rnoRateLimitError`, `Z3rnoAuthenticationError`, `Z3rnoValidationError`, each mapping to a specific HTTP status.
+- **Automatic retries** -- exponential backoff on connection errors and 5xx responses. `Retry-After` honored on 429.
+- **Context manager support** -- use `with` / `async with` for automatic cleanup.
+
+## Framework Integrations
 
 Each is a separate package that depends on `z3rno`:
 
-- `z3rno-langchain` — LangChain `BaseMemory` + `BaseRetriever` adapter
-- `z3rno-crewai` — CrewAI memory provider
-- `z3rno-openai` — OpenAI Agents SDK function tools
+- `z3rno-langchain` -- LangChain `BaseMemory` + `BaseRetriever` adapter
+- `z3rno-crewai` -- CrewAI memory provider
+- `z3rno-openai` -- OpenAI Agents SDK function tools
 
-For Anthropic Claude, see the dedicated `z3rno-mcp` Model Context Protocol server.
+For Anthropic Claude, see the `z3rno-mcp` Model Context Protocol server.
+
+## API Documentation
+
+Full API reference: [docs.z3rno.dev/sdk/python](https://docs.z3rno.dev/sdk/python)
+
+## Development
+
+```bash
+uv sync --dev
+uv run ruff check .
+uv run mypy .
+uv run pytest
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow.
+
+## License
+
+Apache 2.0 -- see [LICENSE](LICENSE).
