@@ -1,0 +1,70 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "z3rno"
+version = "0.0.1"
+description = "Python SDK for Z3rno — AI agent memory database."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+authors = [
+  { name = "The AI Project Co.", email = "engineering@z3rno.dev" },
+]
+keywords = ["ai-agents", "memory", "vector-database", "rag"]
+
+dependencies = [
+  "httpx[http2]>=0.27.0",
+  "pydantic>=2.10.0",
+  "tenacity>=9.0.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3.0",
+  "pytest-asyncio>=0.24.0",
+  "pytest-httpx>=0.34.0",
+  "ruff>=0.8.6",
+  "mypy>=1.13.0",
+]
+
+[project.urls]
+Homepage = "https://z3rno.dev"
+Documentation = "https://docs.z3rno.dev/sdk/python"
+Repository = "https://github.com/the-ai-project-co/z3rno-sdk-python"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/z3rno"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "N", "S", "A", "T20", "SIM", "RUF", "PT", "PL", "TRY", "PERF"]
+ignore = ["E501", "S101", "PLR0913", "TRY003", "PLR2004"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["z3rno"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+namespace_packages = true
+explicit_package_bases = true
+files = ["src/z3rno", "tests"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = ["-ra", "--strict-markers"]
