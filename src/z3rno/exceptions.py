@@ -14,6 +14,9 @@ class Z3rnoError(Exception):
 class AuthenticationError(Z3rnoError):
     """401 - Invalid or missing API key."""
 
+    def __init__(self, message: str) -> None:
+        super().__init__(message, status_code=401)
+
 
 class RateLimitError(Z3rnoError):
     """429 - Rate limit exceeded."""
@@ -26,10 +29,19 @@ class RateLimitError(Z3rnoError):
 class ValidationError(Z3rnoError):
     """400/422 - Invalid request parameters."""
 
+    def __init__(self, message: str, status_code: int = 400) -> None:
+        super().__init__(message, status_code=status_code)
+
 
 class NotFoundError(Z3rnoError):
     """404 - Resource not found."""
 
+    def __init__(self, message: str) -> None:
+        super().__init__(message, status_code=404)
+
 
 class ServerError(Z3rnoError):
     """500+ - Server-side error."""
+
+    def __init__(self, message: str, status_code: int = 500) -> None:
+        super().__init__(message, status_code=status_code)

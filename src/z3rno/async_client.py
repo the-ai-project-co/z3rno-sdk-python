@@ -192,9 +192,9 @@ def _handle_response(resp: httpx.Response) -> dict[str, Any]:
     detail = body.get("detail", body.get("error", resp.text))
 
     if resp.status_code == 401:
-        raise AuthenticationError(f"Authentication failed: {detail}", status_code=401)
+        raise AuthenticationError(f"Authentication failed: {detail}")
     if resp.status_code == 404:
-        raise NotFoundError(f"Not found: {detail}", status_code=404)
+        raise NotFoundError(f"Not found: {detail}")
     if resp.status_code == 429:
         retry = int(resp.headers.get("Retry-After", "60"))
         raise RateLimitError(f"Rate limit exceeded: {detail}", retry_after=retry)
