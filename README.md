@@ -63,6 +63,8 @@ Each is a separate package that depends on `z3rno`:
 
 For Anthropic Claude, see the `z3rno-mcp` Model Context Protocol server.
 
+For a detailed step-by-step setup, see [QUICKSTART.md](QUICKSTART.md).
+
 ## API Documentation
 
 Full API reference: [docs.z3rno.dev/sdk/python](https://docs.z3rno.dev/sdk/python)
