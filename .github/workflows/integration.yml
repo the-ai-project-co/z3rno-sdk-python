@@ -1,0 +1,84 @@
+name: Integration Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    # Only run if integration test files exist
+    if: hashFiles('tests/test_*integration*.py') != ''
+
+    services:
+      postgres:
+        image: ghcr.io/the-ai-project-co/z3rno-postgres:latest
+        env:
+          POSTGRES_USER: z3rno
+          POSTGRES_PASSWORD: z3rno_test
+          POSTGRES_DB: z3rno_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U z3rno"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      z3rno-server:
+        image: ghcr.io/the-ai-project-co/z3rno-server:latest
+        env:
+          DATABASE_URL: postgresql://z3rno:z3rno_test@postgres:5432/z3rno_test
+          Z3RNO_API_KEY: z3rno_sk_test_integration
+          Z3RNO_HOST: 0.0.0.0
+          Z3RNO_PORT: "8000"
+        ports:
+          - 8000:8000
+        options: >-
+          --health-cmd "curl -f http://localhost:8000/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Wait for z3rno-server to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              echo "z3rno-server is ready"
+              exit 0
+            fi
+            echo "Waiting for z3rno-server... ($i/30)"
+            sleep 2
+          done
+          echo "z3rno-server did not become ready"
+          exit 1
+
+      - name: Run integration tests
+        env:
+          Z3RNO_BASE_URL: http://localhost:8000
+          Z3RNO_API_KEY: z3rno_sk_test_integration
+        run: uv run pytest -m integration -v --tb=short
