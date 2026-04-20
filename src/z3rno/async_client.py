@@ -57,7 +57,7 @@ def _wait_with_retry_after_async(retry_state: RetryCallState) -> float:
         return float(exc.retry_after)
     # Exponential backoff: 1s, 2s, 4s, ...
     attempt = retry_state.attempt_number
-    return min(2 ** (attempt - 1), 8)
+    return float(min(2 ** (attempt - 1), 8))
 
 
 class AsyncZ3rnoClient:

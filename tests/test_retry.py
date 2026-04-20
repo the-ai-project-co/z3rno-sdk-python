@@ -231,7 +231,7 @@ def test_total_attempts_max_retries_one() -> None:
     client = Z3rnoClient(base_url=_BASE, api_key="k", max_retries=1)
     call_count = 0
 
-    def counting_request(*args, **kwargs):
+    def counting_request(*args: object, **kwargs: object) -> MagicMock:
         nonlocal call_count
         call_count += 1
         resp = MagicMock(spec=httpx.Response)
