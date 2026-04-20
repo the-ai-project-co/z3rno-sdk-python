@@ -33,6 +33,11 @@ dependencies = [
   "tenacity>=9.0.0",
 ]
 
+[project.optional-dependencies]
+crewai = ["crewai>=0.80.0"]
+langchain = ["langchain-core>=0.3.0"]
+openai = ["openai>=1.50.0"]
+
 [dependency-groups]
 dev = [
   "pytest>=8.3.0",
