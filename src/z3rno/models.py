@@ -126,3 +126,30 @@ class Session(BaseModel):
     session_type: str
     started_at: datetime
     metadata: dict[str, str] = Field(default_factory=dict)
+
+
+class BatchStoreResponse(BaseModel):
+    """Response from a batch store operation."""
+
+    results: list[Memory]
+    stored_count: int
+
+
+class MemoryVersion(BaseModel):
+    """A single version of a memory in its history."""
+
+    id: str
+    content: str
+    memory_type: str
+    importance_score: float
+    valid_from: datetime
+    valid_to: datetime | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class MemoryHistoryResponse(BaseModel):
+    """Response from a memory history query."""
+
+    memory_id: str
+    versions: list[MemoryVersion]
+    total: int

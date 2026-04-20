@@ -13,6 +13,18 @@ authors = [
   { name = "The AI Project Co.", email = "engineering@z3rno.dev" },
 ]
 keywords = ["ai-agents", "memory", "vector-database", "rag"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
 
 dependencies = [
   "httpx[http2]>=0.27.0",
@@ -27,6 +39,9 @@ dev = [
   "pytest-httpx>=0.34.0",
   "ruff>=0.8.6",
   "mypy>=1.13.0",
+  "mkdocs>=1.6.0",
+  "mkdocstrings[python]>=0.26.0",
+  "mkdocs-material>=9.5.0",
 ]
 
 [project.urls]
@@ -37,6 +52,9 @@ Repository = "https://github.com/the-ai-project-co/z3rno-sdk-python"
 [tool.hatch.build.targets.wheel]
 packages = ["src/z3rno"]
 
+[tool.hatch.envs.default.scripts]
+docs = "mkdocs build"
+
 [tool.ruff]
 target-version = "py310"
 line-length = 100
@@ -45,6 +63,10 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "C4", "UP", "N", "S", "A", "T20", "SIM", "RUF", "PT", "PL", "TRY", "PERF"]
 ignore = ["E501", "S101", "PLR0913", "TRY003", "PLR2004"]
+
+[tool.ruff.lint.per-file-ignores]
+"examples/**/*.py" = ["T201", "T203", "INP001", "S105"]
+"tests/**/*.py" = ["S101", "S105", "S106", "SIM117"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["z3rno"]
@@ -68,3 +90,6 @@ minversion = "8.0"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = ["-ra", "--strict-markers"]
+markers = [
+    "integration: marks tests that require a running z3rno-server (deselect with '-m \"not integration\"')",
+]

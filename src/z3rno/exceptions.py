@@ -45,3 +45,10 @@ class ServerError(Z3rnoError):
 
     def __init__(self, message: str, status_code: int = 500) -> None:
         super().__init__(message, status_code=status_code)
+
+
+class Z3rnoConnectionError(Z3rnoError):
+    """Network failure — DNS, timeout, connection refused."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message, status_code=None)
