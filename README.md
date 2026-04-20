@@ -67,7 +67,7 @@ For a detailed step-by-step setup, see [QUICKSTART.md](QUICKSTART.md).
 
 ## API Documentation
 
-Full API reference: [docs.z3rno.dev/sdk/python](https://docs.z3rno.dev/sdk/python)
+Full API reference: [astron-bb4261fd.mintlify.app/sdk/python](https://astron-bb4261fd.mintlify.app/sdk/python)
 
 ## Development
 
