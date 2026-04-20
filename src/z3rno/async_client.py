@@ -25,6 +25,7 @@ from z3rno.exceptions import (
     Z3rnoConnectionError,
     Z3rnoError,
 )
+from z3rno.logging import elapsed_ms, log_request, logging_enabled, start_timer
 from z3rno.models import (
     AuditPage,
     BatchStoreResponse,
@@ -77,6 +78,7 @@ class AsyncZ3rnoClient:
         timeout: float = 30.0,
         max_retries: int = 3,
         proxy: str | None = None,
+        enable_logging: bool = False,
     ) -> None:
         self._config = Z3rnoConfig(
             base_url=base_url.rstrip("/"),
@@ -85,6 +87,7 @@ class AsyncZ3rnoClient:
             max_retries=max_retries,
             proxy=proxy,
         )
+        self._logging = logging_enabled(enable_logging)
         client_kwargs: dict[str, Any] = {
             "base_url": self._config.base_url,
             "headers": self._config.auth_headers,
@@ -375,6 +378,7 @@ class AsyncZ3rnoClient:
 
     async def _do_request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
         """Execute a single async HTTP request and handle the response."""
+        t0 = start_timer() if self._logging else 0.0
         try:
             resp = await self._http.request(method, path, **kwargs)
         except (
@@ -384,6 +388,14 @@ class AsyncZ3rnoClient:
             httpx.ConnectTimeout,
         ) as exc:
             raise Z3rnoConnectionError(f"Connection failed: {exc}") from exc
+        if self._logging:
+            log_request(
+                method=method,
+                path=path,
+                status_code=resp.status_code,
+                duration_ms=elapsed_ms(t0),
+                request_id=resp.headers.get("x-request-id"),
+            )
         return _handle_response(resp)
 
 
