@@ -15,6 +15,7 @@ def _ensure_configured() -> None:
     global _configured  # noqa: PLW0603
     if _configured:
         return
+    log_level = structlog.get_level_from_env("Z3RNO_LOG_LEVEL", default="INFO")  # type: ignore[operator]
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
@@ -22,9 +23,7 @@ def _ensure_configured() -> None:
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.JSONRenderer(),
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(
-            structlog.get_level_from_env("Z3RNO_LOG_LEVEL", default="INFO"),
-        ),
+        wrapper_class=structlog.make_filtering_bound_logger(log_level),
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
     )
@@ -33,7 +32,7 @@ def _ensure_configured() -> None:
 
 def _get_logger() -> structlog.stdlib.BoundLogger:
     _ensure_configured()
-    return structlog.get_logger("z3rno.sdk")  # type: ignore[return-value]
+    return structlog.get_logger("z3rno.sdk")  # type: ignore[no-any-return]
 
 
 def log_request(

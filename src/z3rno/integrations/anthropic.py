@@ -149,35 +149,35 @@ def handle_tool_use(
     import json  # noqa: PLC0415
 
     if tool_name == "store_memory":
-        result = client.store(
+        store_result = client.store(
             agent_id=agent_id,
             content=tool_input["content"],
             memory_type=tool_input.get("memory_type", "semantic"),
             metadata=tool_input.get("metadata"),
         )
-        return json.dumps({"stored": True, "memory_id": str(result.id)})
+        return json.dumps({"stored": True, "memory_id": str(store_result.id)})
 
     elif tool_name == "recall_memory":
-        result = client.recall(
+        recall_result = client.recall(
             agent_id=agent_id,
             query=tool_input["query"],
             top_k=tool_input.get("top_k", 5),
             memory_type=tool_input.get("memory_type"),
         )
         memories = [
-            {"content": r.content, "score": r.score, "memory_type": r.memory_type}
-            for r in result.results
+            {"content": r.content, "score": r.similarity_score, "memory_type": r.memory_type}
+            for r in recall_result.results
         ]
         return json.dumps({"results": memories, "total": len(memories)})
 
     elif tool_name == "forget_memory":
-        result = client.forget(
+        forget_result = client.forget(
             agent_id=agent_id,
             memory_id=tool_input["memory_id"],
             hard_delete=tool_input.get("hard_delete", False),
             reason=tool_input.get("reason"),
         )
-        return json.dumps({"forgotten": True, "deleted_count": result.deleted_count})
+        return json.dumps({"forgotten": True, "deleted_count": forget_result.deleted_count})
 
     else:
         return json.dumps({"error": f"Unknown tool: {tool_name}"})

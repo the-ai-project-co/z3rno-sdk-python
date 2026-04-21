@@ -41,7 +41,7 @@ class Z3rnoChatMessageHistory(BaseChatMessageHistory):
     # -- Required interface --------------------------------------------------
 
     @property
-    def messages(self) -> list[BaseMessage]:
+    def messages(self) -> list[BaseMessage]:  # type: ignore[override]
         """Retrieve all messages for this session from Z3rno."""
         response = self._client.recall(
             agent_id=self.agent_id,
@@ -62,7 +62,7 @@ class Z3rnoChatMessageHistory(BaseChatMessageHistory):
         role = "ai" if isinstance(message, AIMessage) else "human"
         mem = self._client.store(
             agent_id=self.agent_id,
-            content=message.content,
+            content=message.content if isinstance(message.content, str) else str(message.content),
             memory_type="episodic",
             metadata={
                 "role": role,

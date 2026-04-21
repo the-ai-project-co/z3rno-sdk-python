@@ -8,6 +8,7 @@ verifying cross-framework memory sharing through a common Z3rno backend.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -30,10 +31,10 @@ class TestCrossFrameworkMemorySharing:
         """Set up a mock Z3rnoClient shared between frameworks."""
         self.client = MagicMock(spec=Z3rnoClient)
         self.agent_id = "shared-agent-001"
-        self.stored_memories: list[dict] = []
+        self.stored_memories: list[dict[str, Any]] = []
 
         # Configure client.store to return a Memory and track what was stored
-        def mock_store(**kwargs):
+        def mock_store(**kwargs: Any) -> Memory:
             memory = Memory(
                 id=f"mem-{len(self.stored_memories) + 1}",
                 agent_id=kwargs.get("agent_id", self.agent_id),

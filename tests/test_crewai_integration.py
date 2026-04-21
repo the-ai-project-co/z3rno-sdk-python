@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -103,7 +104,7 @@ class TestSave:
 
 class TestSearch:
     def _make_recall_result(
-        self, memory_id: str, content: str, score: float, metadata: dict | None = None
+        self, memory_id: str, content: str, score: float, metadata: dict[str, Any] | None = None
     ) -> MagicMock:
         r = MagicMock()
         r.memory_id = memory_id

@@ -67,7 +67,7 @@ class Z3rnoChatMessageHistory(BaseChatMessageHistory):
         self.top_k = top_k
 
     @property
-    def messages(self) -> list[BaseMessage]:
+    def messages(self) -> list[BaseMessage]:  # type: ignore[override]
         """Retrieve stored messages from Z3rno."""
         filters: dict[str, Any] | None = None
         if self.session_id:

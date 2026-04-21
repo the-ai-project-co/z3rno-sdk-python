@@ -155,15 +155,14 @@ def handle_tool_call(
     Raises:
         ValueError: If *tool_name* is not recognised.
     """
-    if isinstance(arguments, str):
-        arguments = json.loads(arguments)
+    args: dict[str, Any] = json.loads(arguments) if isinstance(arguments, str) else arguments
 
     if tool_name == "store_memory":
-        return _handle_store(client, agent_id, arguments)
+        return _handle_store(client, agent_id, args)
     if tool_name == "recall_memory":
-        return _handle_recall(client, agent_id, arguments)
+        return _handle_recall(client, agent_id, args)
     if tool_name == "forget_memory":
-        return _handle_forget(client, agent_id, arguments)
+        return _handle_forget(client, agent_id, args)
 
     raise ValueError(f"Unknown tool: {tool_name}")
 
