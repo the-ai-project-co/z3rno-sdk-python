@@ -59,12 +59,17 @@ class Z3rnoChatMessageHistory(BaseChatMessageHistory):
         session_id: str | None = None,
         user_id: str | None = None,
         top_k: int = 50,
+        # Phase G slice 2 — when set, recall is scoped to this Z3rno
+        # Conversation and new messages are recorded as turns. Falls
+        # back to the legacy ``session_id`` metadata path when None.
+        conversation_id: str | None = None,
     ) -> None:
         self.client = client
         self.agent_id = agent_id
         self.session_id = session_id
         self.user_id = user_id
         self.top_k = top_k
+        self.conversation_id = conversation_id
 
     @property
     def messages(self) -> list[BaseMessage]:  # type: ignore[override]
@@ -78,6 +83,7 @@ class Z3rnoChatMessageHistory(BaseChatMessageHistory):
             top_k=self.top_k,
             filters=filters,
             memory_type="episodic",
+            conversation_id=self.conversation_id,
         )
 
         msgs: list[BaseMessage] = []
@@ -99,13 +105,19 @@ class Z3rnoChatMessageHistory(BaseChatMessageHistory):
 
             content = message.content if isinstance(message.content, str) else str(message.content)
 
-            self.client.store(
+            memory = self.client.store(
                 agent_id=self.agent_id,
                 content=content,
                 memory_type="episodic",
                 user_id=self.user_id,
                 metadata=metadata,
             )
+            if self.conversation_id:
+                self.client.add_turn(
+                    self.conversation_id,
+                    memory_id=memory.id,
+                    turn_role="assistant" if role == "ai" else "user",
+                )
 
     def clear(self) -> None:
         """Forget all memories for this agent."""
