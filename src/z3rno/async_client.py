@@ -229,7 +229,7 @@ class AsyncZ3rnoClient:
         resp = await self._request("POST", "/v1/memories/recall", json=body, timeout=timeout)
         return RecallResponse.model_validate(resp)
 
-    async def recall_stream_sse(
+    async def recall_stream_sse(  # noqa: PLR0912 — SSE parser branches map to event/data line types
         self,
         *,
         agent_id: str,
@@ -456,6 +456,17 @@ class AsyncZ3rnoClient:
             timeout=timeout,
         )
         return TurnAddResponse.model_validate(resp)
+
+    async def delete_conversation(
+        self,
+        conversation_id: str,
+        *,
+        timeout: float | None = None,
+    ) -> None:
+        """v0.19.3 — soft-delete a conversation. Idempotent."""
+        await self._request(
+            "DELETE", f"/v1/conversations/{conversation_id}", timeout=timeout
+        )
 
     async def list_turns(
         self,

@@ -419,6 +419,19 @@ class Z3rnoClient:
         )
         return TurnAddResponse.model_validate(resp)
 
+    def delete_conversation(
+        self,
+        conversation_id: str,
+        *,
+        timeout: float | None = None,
+    ) -> None:
+        """v0.19.3 — soft-delete a conversation. Existing turn Memos
+        stay queryable through standard recall; the conversation
+        itself stops accepting turns and its endpoints 404."""
+        self._request(
+            "DELETE", f"/v1/conversations/{conversation_id}", timeout=timeout
+        )
+
     def list_turns(
         self,
         conversation_id: str,
