@@ -33,6 +33,7 @@ from z3rno.models import (
     RecallResult,
     Relationship,
     RelationshipType,
+    RetrievalStrategy,
     Session,
 )
 
@@ -53,6 +54,7 @@ __all__ = [
     "RecallResult",
     "Relationship",
     "RelationshipType",
+    "RetrievalStrategy",
     "ServerError",
     "Session",
     "ValidationError",

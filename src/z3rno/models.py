@@ -39,6 +39,24 @@ class RelationshipType(StrEnum):
     CAUSED_BY = "caused_by"
 
 
+class RetrievalStrategy(StrEnum):
+    """Retrieval strategy for ``recall(strategy=...)`` (Phase C).
+
+    AUTO is the default; the server's LLM router picks one of the others
+    when configured. Use the explicit enum value to bypass routing.
+    """
+
+    AUTO = "AUTO"        # LLM router picks the best strategy (default)
+    VECTOR = "VECTOR"    # Cosine similarity over pgvector HNSW
+    LEXICAL = "LEXICAL"  # Postgres tsvector + ts_rank
+    GRAPH = "GRAPH"      # Vector seeds → AGE subgraph → optional LLM synthesis
+    TRIPLET = "TRIPLET"  # LLM-parsed (S, P, O) → AGE traversal → slot fill
+    TRACE = "TRACE"      # Chain-of-thought multi-step retrieval
+    TEMPORAL = "TEMPORAL"  # SCD-2 time-travel (with optional LLM time parsing)
+    ASK = "ASK"          # NL → Cypher → execute (read-only)
+    CYPHER = "CYPHER"    # Raw Cypher passthrough (gated by ALLOW_CYPHER_QUERY)
+
+
 class Relationship(BaseModel):
     """Input for creating a memory relationship."""
 
@@ -75,6 +93,9 @@ class RecallResult(BaseModel):
     recall_count: int
     created_at: datetime
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # Phase C: per-source signals (vector, lexical, graph_richness,
+    # reranker, …). Optional — older SDKs ignoring this field keep working.
+    score_components: dict[str, float] = Field(default_factory=dict)
 
 
 class RecallResponse(BaseModel):
@@ -83,6 +104,11 @@ class RecallResponse(BaseModel):
     results: list[RecallResult]
     total: int
     query: str | None = None
+    # Phase C: provenance for the dispatched strategy.
+    strategy_used: str = "VECTOR"
+    strategies_considered: list[str] = Field(default_factory=list)
+    reranked: bool = False
+    elapsed_ms: float = 0.0
 
 
 class ForgetResult(BaseModel):

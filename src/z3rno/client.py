@@ -191,9 +191,23 @@ class Z3rnoClient:
         similarity_threshold: float = 0.0,
         time_range: tuple[datetime, datetime] | None = None,
         as_of: datetime | None = None,
+        # Phase C: strategy selection + opt-in re-ranking.
+        strategy: str = "AUTO",
+        rerank: bool = False,
         timeout: float | None = None,
     ) -> RecallResponse:
-        """Recall memories by query."""
+        """Recall memories by query.
+
+        Args:
+            strategy: One of ``AUTO | VECTOR | LEXICAL | GRAPH | TRIPLET |
+                TRACE | TEMPORAL | ASK | CYPHER`` (see
+                :class:`RetrievalStrategy`). Case-insensitive. ``AUTO``
+                (default) lets the server's LLM router pick the best
+                fit per query.
+            rerank: When ``True``, apply a cross-encoder re-ranker over
+                the strategy's top-K results. Requires the server to
+                have ``sentence-transformers`` installed.
+        """
         body: dict[str, Any] = {"agent_id": agent_id, "top_k": top_k}
         if query:
             body["query"] = query
@@ -207,6 +221,10 @@ class Z3rnoClient:
             body["time_range"] = [t.isoformat() for t in time_range]
         if as_of:
             body["as_of"] = as_of.isoformat()
+        # Strategy + rerank always sent. Older servers silently ignore
+        # unknown fields.
+        body["strategy"] = strategy
+        body["rerank"] = rerank
 
         resp = self._request("POST", "/v1/memories/recall", json=body, timeout=timeout)
         return RecallResponse.model_validate(resp)

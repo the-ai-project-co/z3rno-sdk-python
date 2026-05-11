@@ -190,9 +190,12 @@ class AsyncZ3rnoClient:
         similarity_threshold: float = 0.0,
         time_range: tuple[datetime, datetime] | None = None,
         as_of: datetime | None = None,
+        # Phase C: strategy selection + opt-in re-ranking.
+        strategy: str = "AUTO",
+        rerank: bool = False,
         timeout: float | None = None,
     ) -> RecallResponse:
-        """Recall memories by query."""
+        """Recall memories by query. See sync client for full docs."""
         body: dict[str, Any] = {"agent_id": agent_id, "top_k": top_k}
         if query:
             body["query"] = query
@@ -206,6 +209,8 @@ class AsyncZ3rnoClient:
             body["time_range"] = [t.isoformat() for t in time_range]
         if as_of:
             body["as_of"] = as_of.isoformat()
+        body["strategy"] = strategy
+        body["rerank"] = rerank
 
         resp = await self._request("POST", "/v1/memories/recall", json=body, timeout=timeout)
         return RecallResponse.model_validate(resp)
