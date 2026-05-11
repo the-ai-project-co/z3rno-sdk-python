@@ -29,12 +29,18 @@ from z3rno.logging import elapsed_ms, log_request, logging_enabled, start_timer
 from z3rno.models import (
     AuditPage,
     BatchStoreResponse,
+    DistillJob,
+    DistillJobStatus,
     ForgetResult,
+    IngestJob,
+    IngestJobStatus,
     Memory,
     MemoryHistoryResponse,
     MemoryType,
     RecallResponse,
     RecallResult,
+    RefineJob,
+    RefineJobStatus,
     Relationship,
     Session,
 )
@@ -385,6 +391,124 @@ class Z3rnoClient:
             yield sess
         finally:
             self.end_session(str(sess.session_id))
+
+    # --- Forge: ingest / distill / refine -------------------------------
+    #
+    # These wrap the Phase A / B / D server endpoints. The server gates
+    # them behind operator flags (INGEST_ENABLED / DISTILL_ENABLED /
+    # REFINE_ENABLED); when off, the routes are not registered and
+    # these methods raise NotFoundError. Callers can either catch that
+    # or check OpenAPI before invoking.
+
+    def ingest_text(
+        self,
+        *,
+        agent_id: str,
+        text: str,
+        dataset_id: str | None = None,
+        timeout: float | None = None,
+    ) -> IngestJob:
+        """Enqueue a text-ingest job. Returns the job ack — poll
+        ``get_ingest_status(job_id)`` for the final state."""
+        body: dict[str, Any] = {
+            "kind": "text",
+            "agent_id": agent_id,
+            "text": text,
+        }
+        if dataset_id:
+            body["dataset_id"] = dataset_id
+        resp = self._request("POST", "/v1/ingest", json=body, timeout=timeout)
+        return IngestJob.model_validate(resp)
+
+    def ingest_url(
+        self,
+        *,
+        agent_id: str,
+        url: str,
+        dataset_id: str | None = None,
+        timeout: float | None = None,
+    ) -> IngestJob:
+        """Enqueue a URL-ingest job. Server fetches the URL with the
+        configured timeout + scheme allowlist."""
+        body: dict[str, Any] = {
+            "kind": "url",
+            "agent_id": agent_id,
+            "url": url,
+        }
+        if dataset_id:
+            body["dataset_id"] = dataset_id
+        resp = self._request("POST", "/v1/ingest", json=body, timeout=timeout)
+        return IngestJob.model_validate(resp)
+
+    def get_ingest_status(
+        self, job_id: str, *, timeout: float | None = None
+    ) -> IngestJobStatus:
+        """Fetch the full state of an ingest job."""
+        resp = self._request("GET", f"/v1/ingest/{job_id}", timeout=timeout)
+        return IngestJobStatus.model_validate(resp)
+
+    def distill(
+        self,
+        *,
+        agent_id: str,
+        memory_ids: list[str],
+        chunk_size: int | None = None,
+        chunk_overlap: int | None = None,
+        max_concurrency: int | None = None,
+        summary_style: str | None = None,
+        include_summary: bool = True,
+        timeout: float | None = None,
+    ) -> DistillJob:
+        """Enqueue a Forge distillation job over ``memory_ids``.
+
+        Returns the enqueue ack. Idempotent — re-running over already-
+        distilled memories is a no-op on the server.
+        """
+        body: dict[str, Any] = {
+            "agent_id": agent_id,
+            "memory_ids": memory_ids,
+            "include_summary": include_summary,
+        }
+        if chunk_size is not None:
+            body["chunk_size"] = chunk_size
+        if chunk_overlap is not None:
+            body["chunk_overlap"] = chunk_overlap
+        if max_concurrency is not None:
+            body["max_concurrency"] = max_concurrency
+        if summary_style is not None:
+            body["summary_style"] = summary_style
+        resp = self._request("POST", "/v1/distill", json=body, timeout=timeout)
+        return DistillJob.model_validate(resp)
+
+    def get_distill_status(
+        self, job_id: str, *, timeout: float | None = None
+    ) -> DistillJobStatus:
+        """Fetch the full state of a distill job."""
+        resp = self._request("GET", f"/v1/distill/{job_id}", timeout=timeout)
+        return DistillJobStatus.model_validate(resp)
+
+    def refine(
+        self,
+        *,
+        dataset_id: str | None = None,
+        timeout: float | None = None,
+    ) -> RefineJob:
+        """Enqueue a refine pass (dedupe → reweight → prune; opt-in
+        infer + summarize stages controlled server-side). Admin-only
+        on the server.
+        """
+        body: dict[str, Any] = {}
+        if dataset_id:
+            body["dataset_id"] = dataset_id
+        resp = self._request("POST", "/v1/refine", json=body, timeout=timeout)
+        return RefineJob.model_validate(resp)
+
+    def get_refine_status(
+        self, job_id: str, *, timeout: float | None = None
+    ) -> RefineJobStatus:
+        """Fetch the full state of a refine job."""
+        resp = self._request("GET", f"/v1/refine/{job_id}", timeout=timeout)
+        return RefineJobStatus.model_validate(resp)
 
     # --- HTTP layer ---
 

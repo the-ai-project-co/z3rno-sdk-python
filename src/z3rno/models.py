@@ -179,3 +179,104 @@ class MemoryHistoryResponse(BaseModel):
     memory_id: str
     versions: list[MemoryVersion]
     total: int
+
+
+# ---------------------------------------------------------------------------
+# Forge verbs (Phase A / B / D) — ingest / distill / refine
+# ---------------------------------------------------------------------------
+
+
+class IngestJob(BaseModel):
+    """Response from POST /v1/ingest — the enqueue ack."""
+
+    job_id: str
+    kind: str  # "text" | "url" | "file"
+    status: str
+    dataset_id: str | None = None
+    enqueued_at: datetime
+
+
+class IngestJobStatus(BaseModel):
+    """Response from GET /v1/ingest/{job_id} — full job state."""
+
+    job_id: str
+    agent_id: str
+    dataset_id: str | None = None
+    kind: str
+    status: str
+    source_uri: str | None = None
+    content_type: str | None = None
+    filename: str | None = None
+    file_size: int | None = None
+    memory_ids: list[str] = Field(default_factory=list)
+    memos_written: int = 0
+    distill_job_id: str | None = None
+    codegraph_memos_written: int = 0
+    codegraph_edges_written: int = 0
+    error: str | None = None
+    warnings: list[dict[str, Any]] = Field(default_factory=list)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class DistillJob(BaseModel):
+    """Response from POST /v1/distill — the enqueue ack."""
+
+    job_id: str
+    status: str
+    memory_ids: list[str]
+    enqueued_at: datetime
+
+
+class DistillJobStatus(BaseModel):
+    """Response from GET /v1/distill/{job_id} — full job state."""
+
+    job_id: str
+    agent_id: str
+    status: str
+    model: str
+    memory_ids: list[str]
+    chunk_size: int
+    chunk_overlap: int
+    max_concurrency: int
+    chunks_total: int
+    chunks_failed: int
+    entities_extracted: int
+    relationships_extracted: int
+    memos_written: int
+    error: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class RefineJob(BaseModel):
+    """Response from POST /v1/refine — the enqueue ack."""
+
+    job_id: str
+    status: str
+    dataset_id: str | None = None
+    enqueued_at: datetime
+
+
+class RefineJobStatus(BaseModel):
+    """Response from GET /v1/refine/{job_id} — full job state."""
+
+    job_id: str
+    status: str
+    dataset_id: str | None = None
+    trigger: str
+    memos_scanned: int = 0
+    memos_deduped: int = 0
+    edges_reweighted: int = 0
+    edges_pruned: int = 0
+    feedback_drained: int = 0
+    job_metadata: dict[str, Any] = Field(default_factory=dict)
+    error: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None

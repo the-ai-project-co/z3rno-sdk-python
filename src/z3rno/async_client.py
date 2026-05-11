@@ -29,12 +29,18 @@ from z3rno.logging import elapsed_ms, log_request, logging_enabled, start_timer
 from z3rno.models import (
     AuditPage,
     BatchStoreResponse,
+    DistillJob,
+    DistillJobStatus,
     ForgetResult,
+    IngestJob,
+    IngestJobStatus,
     Memory,
     MemoryHistoryResponse,
     MemoryType,
     RecallResponse,
     RecallResult,
+    RefineJob,
+    RefineJobStatus,
     Relationship,
     Session,
 )
@@ -359,6 +365,102 @@ class AsyncZ3rnoClient:
             yield sess
         finally:
             await self.end_session(str(sess.session_id))
+
+    # --- Forge: ingest / distill / refine -------------------------------
+
+    async def ingest_text(
+        self,
+        *,
+        agent_id: str,
+        text: str,
+        dataset_id: str | None = None,
+        timeout: float | None = None,
+    ) -> IngestJob:
+        body: dict[str, Any] = {
+            "kind": "text",
+            "agent_id": agent_id,
+            "text": text,
+        }
+        if dataset_id:
+            body["dataset_id"] = dataset_id
+        resp = await self._request("POST", "/v1/ingest", json=body, timeout=timeout)
+        return IngestJob.model_validate(resp)
+
+    async def ingest_url(
+        self,
+        *,
+        agent_id: str,
+        url: str,
+        dataset_id: str | None = None,
+        timeout: float | None = None,
+    ) -> IngestJob:
+        body: dict[str, Any] = {
+            "kind": "url",
+            "agent_id": agent_id,
+            "url": url,
+        }
+        if dataset_id:
+            body["dataset_id"] = dataset_id
+        resp = await self._request("POST", "/v1/ingest", json=body, timeout=timeout)
+        return IngestJob.model_validate(resp)
+
+    async def get_ingest_status(
+        self, job_id: str, *, timeout: float | None = None
+    ) -> IngestJobStatus:
+        resp = await self._request("GET", f"/v1/ingest/{job_id}", timeout=timeout)
+        return IngestJobStatus.model_validate(resp)
+
+    async def distill(
+        self,
+        *,
+        agent_id: str,
+        memory_ids: list[str],
+        chunk_size: int | None = None,
+        chunk_overlap: int | None = None,
+        max_concurrency: int | None = None,
+        summary_style: str | None = None,
+        include_summary: bool = True,
+        timeout: float | None = None,
+    ) -> DistillJob:
+        body: dict[str, Any] = {
+            "agent_id": agent_id,
+            "memory_ids": memory_ids,
+            "include_summary": include_summary,
+        }
+        if chunk_size is not None:
+            body["chunk_size"] = chunk_size
+        if chunk_overlap is not None:
+            body["chunk_overlap"] = chunk_overlap
+        if max_concurrency is not None:
+            body["max_concurrency"] = max_concurrency
+        if summary_style is not None:
+            body["summary_style"] = summary_style
+        resp = await self._request("POST", "/v1/distill", json=body, timeout=timeout)
+        return DistillJob.model_validate(resp)
+
+    async def get_distill_status(
+        self, job_id: str, *, timeout: float | None = None
+    ) -> DistillJobStatus:
+        resp = await self._request("GET", f"/v1/distill/{job_id}", timeout=timeout)
+        return DistillJobStatus.model_validate(resp)
+
+    async def refine(
+        self,
+        *,
+        dataset_id: str | None = None,
+        timeout: float | None = None,
+    ) -> RefineJob:
+        body: dict[str, Any] = {}
+        if dataset_id:
+            body["dataset_id"] = dataset_id
+        resp = await self._request("POST", "/v1/refine", json=body, timeout=timeout)
+        return RefineJob.model_validate(resp)
+
+    async def get_refine_status(
+        self, job_id: str, *, timeout: float | None = None
+    ) -> RefineJobStatus:
+        resp = await self._request("GET", f"/v1/refine/{job_id}", timeout=timeout)
+        return RefineJobStatus.model_validate(resp)
 
     # --- HTTP layer ---
 
