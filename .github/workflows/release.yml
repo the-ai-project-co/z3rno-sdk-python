@@ -22,6 +22,22 @@ jobs:
         with:
           python-version: '3.12'
 
+
+      # v0.20.1 — pre-flight guards. Catch tag/pyproject drift +
+      # PyPI version collision before the upload step.
+      - name: Assert tag matches pyproject version
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/v}"
+          PYP=$(python3 -c "import tomllib; print(tomllib.loads(open('pyproject.toml').read())['project']['version'])")
+          if [ "$TAG" != "$PYP" ]; then
+            echo "FAIL: git tag v${TAG} != pyproject version ${PYP}. Bump pyproject before tagging." >&2
+            exit 1
+          fi
+          echo "OK: tag v${TAG} == pyproject ${PYP}"
+
+      - name: Assert pyproject version > latest PyPI
+        run: python3 .github/scripts/check_pypi_drift.py z3rno
       - name: Install uv
         uses: astral-sh/setup-uv@v3
 
