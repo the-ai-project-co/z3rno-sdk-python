@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -228,6 +229,78 @@ class AsyncZ3rnoClient:
         resp = await self._request("POST", "/v1/memories/recall", json=body, timeout=timeout)
         return RecallResponse.model_validate(resp)
 
+    async def recall_stream_sse(
+        self,
+        *,
+        agent_id: str,
+        query: str | None = None,
+        memory_type: str | None = None,
+        filters: dict[str, Any] | None = None,
+        top_k: int = 10,
+        similarity_threshold: float = 0.0,
+        time_range: tuple[datetime, datetime] | None = None,
+        as_of: datetime | None = None,
+        strategy: str = "AUTO",
+        rerank: bool = False,
+        conversation_id: str | None = None,
+        timeout: float | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Phase G slice 5 — server-streamed recall via SSE.
+
+        Yields one dict per server-sent event with shape:
+        ``{"event": "step"|"results"|"error"|"done", "data": {...}}``.
+        For TRACE, ``step`` events arrive as each refinement completes —
+        first byte typically lands in ~30-50ms (vector seed latency)
+        vs ~250ms for the full single-shot response.
+
+        For non-TRACE strategies, exactly one ``results`` event arrives
+        followed by ``done``.
+        """
+        body: dict[str, Any] = {"agent_id": agent_id, "top_k": top_k}
+        if query:
+            body["query"] = query
+        if memory_type:
+            body["memory_type"] = memory_type
+        if filters:
+            body["filters"] = filters
+        if similarity_threshold > 0:
+            body["similarity_threshold"] = similarity_threshold
+        if time_range:
+            body["time_range"] = [t.isoformat() for t in time_range]
+        if as_of:
+            body["as_of"] = as_of.isoformat()
+        body["strategy"] = strategy
+        body["rerank"] = rerank
+        if conversation_id:
+            body["conversation_id"] = conversation_id
+
+        async with self._http.stream(
+            "POST",
+            "/v1/memories/recall/stream",
+            json=body,
+            timeout=timeout,
+        ) as resp:
+            resp.raise_for_status()
+            event_name = "message"
+            data_buf: list[str] = []
+            async for raw in resp.aiter_lines():
+                if not raw:
+                    if data_buf:
+                        try:
+                            payload = json.loads("\n".join(data_buf))
+                        except json.JSONDecodeError:
+                            payload = {"raw": "\n".join(data_buf)}
+                        yield {"event": event_name, "data": payload}
+                        if event_name == "done":
+                            return
+                    event_name = "message"
+                    data_buf = []
+                    continue
+                if raw.startswith("event:"):
+                    event_name = raw.split(":", 1)[1].strip()
+                elif raw.startswith("data:"):
+                    data_buf.append(raw.split(":", 1)[1].lstrip())
+
     async def recall_stream(
         self,
         *,
@@ -241,10 +314,10 @@ class AsyncZ3rnoClient:
         as_of: datetime | None = None,
         timeout: float | None = None,
     ) -> AsyncIterator[RecallResult]:
-        """Recall memories, yielding results one at a time.
+        """Client-side wrapper around :meth:`recall` that iterates results.
 
-        This is a client-side streaming wrapper around :meth:`recall` that
-        reduces peak memory usage for large result sets.
+        Kept for back-compat. For real server-side streaming (per-step
+        TRACE events), use :meth:`recall_stream_sse`.
         """
         response = await self.recall(
             agent_id=agent_id,
