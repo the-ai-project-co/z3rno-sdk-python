@@ -29,6 +29,7 @@ from z3rno.logging import elapsed_ms, log_request, logging_enabled, start_timer
 from z3rno.models import (
     AuditPage,
     BatchStoreResponse,
+    Conversation,
     DistillJob,
     DistillJobStatus,
     ForgetResult,
@@ -43,6 +44,8 @@ from z3rno.models import (
     RefineJobStatus,
     Relationship,
     Session,
+    TurnAddResponse,
+    TurnListResponse,
 )
 
 
@@ -199,6 +202,8 @@ class AsyncZ3rnoClient:
         # Phase C: strategy selection + opt-in re-ranking.
         strategy: str = "AUTO",
         rerank: bool = False,
+        # Phase G slice 2 — scope to a single conversation.
+        conversation_id: str | None = None,
         timeout: float | None = None,
     ) -> RecallResponse:
         """Recall memories by query. See sync client for full docs."""
@@ -217,6 +222,8 @@ class AsyncZ3rnoClient:
             body["as_of"] = as_of.isoformat()
         body["strategy"] = strategy
         body["rerank"] = rerank
+        if conversation_id:
+            body["conversation_id"] = conversation_id
 
         resp = await self._request("POST", "/v1/memories/recall", json=body, timeout=timeout)
         return RecallResponse.model_validate(resp)
@@ -325,6 +332,76 @@ class AsyncZ3rnoClient:
 
         resp = await self._request("PATCH", f"/v1/memories/{memory_id}", json=body, timeout=timeout)
         return Memory.model_validate(resp)
+
+    # --- Conversations (Phase G slice 2) ---
+
+    async def create_conversation(
+        self,
+        *,
+        agent_id: str,
+        user_id: str | None = None,
+        title: str | None = None,
+        summary_cadence: int = 10,
+        metadata: dict[str, Any] | None = None,
+        timeout: float | None = None,
+    ) -> Conversation:
+        body: dict[str, Any] = {
+            "agent_id": agent_id,
+            "summary_cadence": summary_cadence,
+        }
+        if user_id:
+            body["user_id"] = user_id
+        if title:
+            body["title"] = title
+        if metadata:
+            body["metadata"] = metadata
+        resp = await self._request(
+            "POST", "/v1/conversations", json=body, timeout=timeout
+        )
+        return Conversation.model_validate(resp)
+
+    async def get_conversation(
+        self, conversation_id: str, *, timeout: float | None = None
+    ) -> Conversation:
+        resp = await self._request(
+            "GET", f"/v1/conversations/{conversation_id}", timeout=timeout
+        )
+        return Conversation.model_validate(resp)
+
+    async def add_turn(
+        self,
+        conversation_id: str,
+        *,
+        memory_id: str,
+        turn_role: str,
+        timeout: float | None = None,
+    ) -> TurnAddResponse:
+        resp = await self._request(
+            "POST",
+            f"/v1/conversations/{conversation_id}/turns",
+            json={"memory_id": memory_id, "turn_role": turn_role},
+            timeout=timeout,
+        )
+        return TurnAddResponse.model_validate(resp)
+
+    async def list_turns(
+        self,
+        conversation_id: str,
+        *,
+        after_turn: int | None = None,
+        limit: int = 50,
+        timeout: float | None = None,
+    ) -> TurnListResponse:
+        params: dict[str, Any] = {"limit": limit}
+        if after_turn is not None:
+            params["after_turn"] = after_turn
+        resp = await self._request(
+            "GET",
+            f"/v1/conversations/{conversation_id}/turns",
+            params=params,
+            timeout=timeout,
+        )
+        return TurnListResponse.model_validate(resp)
 
     # --- Sessions ---
 

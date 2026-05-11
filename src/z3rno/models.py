@@ -161,6 +161,46 @@ class BatchStoreResponse(BaseModel):
     stored_count: int
 
 
+class Conversation(BaseModel):
+    """A conversation session (Phase G slice 2)."""
+
+    id: str
+    agent_id: str
+    user_id: str | None = None
+    title: str | None = None
+    summary_cadence: int
+    turn_count: int
+    last_summary_turn: int
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+    updated_at: datetime
+
+
+class TurnAddResponse(BaseModel):
+    """Result of appending a turn — includes the cadence flag."""
+
+    turn_index: int
+    needs_summary: bool
+
+
+class Turn(BaseModel):
+    """One turn within a conversation."""
+
+    memory_id: str
+    turn_index: int
+    turn_role: str
+    content: str
+    created_at: datetime
+
+
+class TurnListResponse(BaseModel):
+    """List response for ``GET /v1/conversations/{id}/turns``."""
+
+    turns: list[Turn]
+    total: int
+    conversation_id: str
+
+
 class MemoryVersion(BaseModel):
     """A single version of a memory in its history."""
 

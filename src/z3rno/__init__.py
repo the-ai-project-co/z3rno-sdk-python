@@ -24,6 +24,7 @@ from z3rno.models import (
     AuditEntry,
     AuditPage,
     BatchStoreResponse,
+    Conversation,
     DistillJob,
     DistillJobStatus,
     ForgetResult,
@@ -41,6 +42,9 @@ from z3rno.models import (
     RelationshipType,
     RetrievalStrategy,
     Session,
+    Turn,
+    TurnAddResponse,
+    TurnListResponse,
 )
 
 __all__ = [
@@ -49,6 +53,7 @@ __all__ = [
     "AuditPage",
     "AuthenticationError",
     "BatchStoreResponse",
+    "Conversation",
     "DistillJob",
     "DistillJobStatus",
     "ForgetResult",
@@ -69,10 +74,13 @@ __all__ = [
     "RetrievalStrategy",
     "ServerError",
     "Session",
+    "Turn",
+    "TurnAddResponse",
+    "TurnListResponse",
     "ValidationError",
     "Z3rnoClient",
     "Z3rnoConnectionError",
     "Z3rnoError",
 ]
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
