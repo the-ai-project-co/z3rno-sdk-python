@@ -44,6 +44,8 @@ from z3rno.models import (
     RefineJobStatus,
     Relationship,
     Session,
+    TenantBudgets,
+    TenantBudgetsView,
     TurnAddResponse,
     TurnListResponse,
 )
@@ -359,6 +361,33 @@ class Z3rnoClient:
 
         resp = self._request("PATCH", f"/v1/memories/{memory_id}", json=body, timeout=timeout)
         return Memory.model_validate(resp)
+
+    # --- Tenant budgets (v0.20.3) ---
+
+    def get_my_budgets(
+        self, *, timeout: float | None = None
+    ) -> TenantBudgetsView:
+        """Return this org's stored budget overrides + resolved effective caps."""
+        resp = self._request("GET", "/v1/tenants/me/budgets", timeout=timeout)
+        return TenantBudgetsView.model_validate(resp)
+
+    def set_my_budgets(
+        self,
+        budgets: TenantBudgets | dict[str, int],
+        *,
+        timeout: float | None = None,
+    ) -> TenantBudgetsView:
+        """Replace this org's budget overrides. Zero / missing fields
+        inherit the server default."""
+        body = (
+            budgets.model_dump()
+            if isinstance(budgets, TenantBudgets)
+            else dict(budgets)
+        )
+        resp = self._request(
+            "PUT", "/v1/tenants/me/budgets", json=body, timeout=timeout
+        )
+        return TenantBudgetsView.model_validate(resp)
 
     # --- Conversations (Phase G slice 2) ---
 

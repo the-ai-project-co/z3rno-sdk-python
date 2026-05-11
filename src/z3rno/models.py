@@ -161,6 +161,24 @@ class BatchStoreResponse(BaseModel):
     stored_count: int
 
 
+class TenantBudgets(BaseModel):
+    """v0.20.3 — per-tenant budget caps. Zero means inherit server default."""
+
+    daily_tokens: int = 0
+    daily_llm_calls: int = 0
+    daily_embeddings: int = 0
+    monthly_tokens: int = 0
+    monthly_llm_calls: int = 0
+    monthly_embeddings: int = 0
+
+
+class TenantBudgetsView(BaseModel):
+    """Server response: stored overrides + resolved effective caps."""
+
+    overrides: TenantBudgets
+    effective: TenantBudgets
+
+
 class Conversation(BaseModel):
     """A conversation session (Phase G slice 2)."""
 

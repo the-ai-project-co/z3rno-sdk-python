@@ -45,6 +45,8 @@ from z3rno.models import (
     RefineJobStatus,
     Relationship,
     Session,
+    TenantBudgets,
+    TenantBudgetsView,
     TurnAddResponse,
     TurnListResponse,
 )
@@ -405,6 +407,32 @@ class AsyncZ3rnoClient:
 
         resp = await self._request("PATCH", f"/v1/memories/{memory_id}", json=body, timeout=timeout)
         return Memory.model_validate(resp)
+
+    # --- Tenant budgets (v0.20.3) ---
+
+    async def get_my_budgets(
+        self, *, timeout: float | None = None
+    ) -> TenantBudgetsView:
+        resp = await self._request(
+            "GET", "/v1/tenants/me/budgets", timeout=timeout
+        )
+        return TenantBudgetsView.model_validate(resp)
+
+    async def set_my_budgets(
+        self,
+        budgets: TenantBudgets | dict[str, int],
+        *,
+        timeout: float | None = None,
+    ) -> TenantBudgetsView:
+        body = (
+            budgets.model_dump()
+            if isinstance(budgets, TenantBudgets)
+            else dict(budgets)
+        )
+        resp = await self._request(
+            "PUT", "/v1/tenants/me/budgets", json=body, timeout=timeout
+        )
+        return TenantBudgetsView.model_validate(resp)
 
     # --- Conversations (Phase G slice 2) ---
 
