@@ -694,8 +694,14 @@ class Z3rnoClient:
     @staticmethod
     def _handle_response(resp: httpx.Response) -> dict[str, Any]:
         """Parse response and raise appropriate exceptions."""
-        if resp.status_code in {200, 201}:
+        # 200/201: sync verbs return a body. 202: async-job verbs
+        # (ingest / distill / refine / search) return a job envelope.
+        # 204: DELETE endpoints (delete_conversation, revoke api key)
+        # return no content.
+        if resp.status_code in {200, 201, 202}:
             return resp.json()  # type: ignore[no-any-return]
+        if resp.status_code == 204:
+            return {}
 
         body = (
             resp.json()

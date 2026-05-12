@@ -697,8 +697,13 @@ class AsyncZ3rnoClient:
 
 def _handle_response(resp: httpx.Response) -> dict[str, Any]:
     """Parse response and raise exceptions."""
-    if resp.status_code in (200, 201):
+    # 200/201: sync verbs return a body. 202: async-job verbs
+    # (ingest / distill / refine / search) return a job envelope.
+    # 204: DELETE endpoints return no content.
+    if resp.status_code in (200, 201, 202):
         return resp.json()  # type: ignore[no-any-return]
+    if resp.status_code == 204:
+        return {}
 
     body = resp.json() if "application/json" in resp.headers.get("content-type", "") else {}
     detail = body.get("detail", body.get("error", resp.text))
