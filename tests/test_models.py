@@ -109,10 +109,25 @@ def test_audit_entry() -> None:
     assert e.agent_id is None
 
 
+def test_audit_entry_timestamp_alias() -> None:
+    """v0.8.1 — ``timestamp`` is a reader-friendly alias for ``created_at``."""
+    ts = datetime(2026, 5, 12, 17, 0, 0, tzinfo=timezone.utc)
+    e = AuditEntry(id=1, operation="store", created_at=ts)
+    assert e.timestamp == ts
+    assert e.timestamp == e.created_at
+
+
 def test_audit_page() -> None:
     """AuditPage model."""
     p = AuditPage(entries=[], total=0, page=1, page_size=50, has_next=False)
     assert p.has_next is False
+
+
+def test_audit_page_total_count_alias() -> None:
+    """v0.8.1 — ``total_count`` is a reader-friendly alias for ``total``."""
+    p = AuditPage(entries=[], total=42, page=1, page_size=10, has_next=True)
+    assert p.total_count == 42
+    assert p.total_count == p.total
 
 
 def test_relationship() -> None:

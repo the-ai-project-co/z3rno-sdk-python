@@ -133,6 +133,16 @@ class AuditEntry(BaseModel):
     ip_address: str | None = None
     created_at: datetime
 
+    # v0.8.1 — reader-friendly alias. New users instinctively reach
+    # for ``event.timestamp`` (matches every other timestamp field
+    # name they've seen in REST APIs); the canonical column is
+    # ``created_at``. Provide both so the SDK feels natural without
+    # losing the canonical name. Read-only — set via ``created_at``.
+    @property
+    def timestamp(self) -> datetime:
+        """Alias for ``created_at``. Added in v0.8.1."""
+        return self.created_at
+
 
 class AuditPage(BaseModel):
     """Paginated audit log response."""
@@ -142,6 +152,13 @@ class AuditPage(BaseModel):
     page: int
     page_size: int
     has_next: bool
+
+    # v0.8.1 — reader-friendly alias. ``total_count`` is the natural
+    # name a user reaches for; the canonical field is ``total``.
+    @property
+    def total_count(self) -> int:
+        """Alias for ``total``. Added in v0.8.1."""
+        return self.total
 
 
 class Session(BaseModel):
