@@ -392,6 +392,18 @@ class Z3rnoClient:
 
     # --- Tenant budgets (v0.20.3) ---
 
+    @property
+    def admin(self) -> "_AdminAPI":
+        """Cross-tenant admin namespace (v0.22.1, slice 21.3).
+
+        Requires the server's superadmin surface to be enabled and
+        the client to be configured with the superadmin API key.
+        All methods raise :class:`AuthenticationError` (401) or
+        :class:`Z3rnoError` (403) when invoked against a server with
+        the surface disabled or with a non-superadmin key.
+        """
+        return _AdminAPI(self)
+
     def get_my_budgets(
         self, *, timeout: float | None = None
     ) -> TenantBudgetsView:
@@ -752,3 +764,46 @@ class Z3rnoClient:
         raise Z3rnoError(
             f"Unexpected error ({resp.status_code}): {detail}", status_code=resp.status_code
         )
+
+
+class _AdminAPI:
+    """Cross-tenant admin sub-namespace exposed at ``client.admin``.
+
+    Holds a reference to the parent client and forwards through its
+    ``_request`` method, so retries, auth headers, and timeouts come
+    from the same configuration as the rest of the SDK.
+    """
+
+    def __init__(self, client: Z3rnoClient) -> None:
+        self._client = client
+
+    def get_budgets(
+        self, org_id: str, *, timeout: float | None = None
+    ) -> TenantBudgetsView:
+        """Read another tenant's budget overrides + effective caps.
+
+        Requires the server's ``superadmin_enabled=true`` surface and
+        the configured superadmin API key.
+        """
+        resp = self._client._request(
+            "GET", f"/v1/tenants/{org_id}/budgets", timeout=timeout
+        )
+        return TenantBudgetsView.model_validate(resp)
+
+    def set_budgets(
+        self,
+        org_id: str,
+        budgets: TenantBudgets | dict[str, int],
+        *,
+        timeout: float | None = None,
+    ) -> TenantBudgetsView:
+        """Replace another tenant's budget overrides."""
+        body = (
+            budgets.model_dump()
+            if isinstance(budgets, TenantBudgets)
+            else dict(budgets)
+        )
+        resp = self._client._request(
+            "PUT", f"/v1/tenants/{org_id}/budgets", json=body, timeout=timeout
+        )
+        return TenantBudgetsView.model_validate(resp)

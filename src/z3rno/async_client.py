@@ -446,6 +446,11 @@ class AsyncZ3rnoClient:
 
     # --- Tenant budgets (v0.20.3) ---
 
+    @property
+    def admin(self) -> "_AsyncAdminAPI":
+        """Cross-tenant admin namespace (v0.22.1, slice 21.3)."""
+        return _AsyncAdminAPI(self)
+
     async def get_my_budgets(
         self, *, timeout: float | None = None
     ) -> TenantBudgetsView:
@@ -756,3 +761,35 @@ def _handle_response(resp: httpx.Response) -> dict[str, Any]:
     if resp.status_code >= 500:
         raise ServerError(f"Server error: {detail}", status_code=resp.status_code)
     raise Z3rnoError(f"Unexpected ({resp.status_code}): {detail}", status_code=resp.status_code)
+
+
+class _AsyncAdminAPI:
+    """Async cross-tenant admin sub-namespace at ``client.admin``."""
+
+    def __init__(self, client: AsyncZ3rnoClient) -> None:
+        self._client = client
+
+    async def get_budgets(
+        self, org_id: str, *, timeout: float | None = None
+    ) -> TenantBudgetsView:
+        resp = await self._client._request(
+            "GET", f"/v1/tenants/{org_id}/budgets", timeout=timeout
+        )
+        return TenantBudgetsView.model_validate(resp)
+
+    async def set_budgets(
+        self,
+        org_id: str,
+        budgets: TenantBudgets | dict[str, int],
+        *,
+        timeout: float | None = None,
+    ) -> TenantBudgetsView:
+        body = (
+            budgets.model_dump()
+            if isinstance(budgets, TenantBudgets)
+            else dict(budgets)
+        )
+        resp = await self._client._request(
+            "PUT", f"/v1/tenants/{org_id}/budgets", json=body, timeout=timeout
+        )
+        return TenantBudgetsView.model_validate(resp)
