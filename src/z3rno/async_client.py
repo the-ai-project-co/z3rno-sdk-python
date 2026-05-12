@@ -197,7 +197,11 @@ class AsyncZ3rnoClient:
         agent_id: str,
         query: str | None = None,
         memory_type: str | None = None,
+        # v0.21.2 — renamed from ``filters`` (deprecated alias below).
+        metadata_filter: dict[str, Any] | None = None,
         filters: dict[str, Any] | None = None,
+        # v0.21.1 — real WHERE predicate, not just audit context.
+        user_id: str | None = None,
         top_k: int = 10,
         similarity_threshold: float = 0.0,
         time_range: tuple[datetime, datetime] | None = None,
@@ -210,13 +214,26 @@ class AsyncZ3rnoClient:
         timeout: float | None = None,
     ) -> RecallResponse:
         """Recall memories by query. See sync client for full docs."""
+        if filters is not None and metadata_filter is None:
+            import warnings  # noqa: PLC0415
+
+            warnings.warn(
+                "AsyncZ3rnoClient.recall(filters=...) is deprecated; use "
+                "metadata_filter=... instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            metadata_filter = filters
+
         body: dict[str, Any] = {"agent_id": agent_id, "top_k": top_k}
         if query:
             body["query"] = query
         if memory_type:
             body["memory_type"] = memory_type
-        if filters:
-            body["filters"] = filters
+        if metadata_filter:
+            body["metadata_filter"] = metadata_filter
+        if user_id:
+            body["user_id"] = user_id
         if similarity_threshold > 0:
             body["similarity_threshold"] = similarity_threshold
         if time_range:
@@ -237,7 +254,9 @@ class AsyncZ3rnoClient:
         agent_id: str,
         query: str | None = None,
         memory_type: str | None = None,
+        metadata_filter: dict[str, Any] | None = None,
         filters: dict[str, Any] | None = None,
+        user_id: str | None = None,
         top_k: int = 10,
         similarity_threshold: float = 0.0,
         time_range: tuple[datetime, datetime] | None = None,
@@ -258,13 +277,26 @@ class AsyncZ3rnoClient:
         For non-TRACE strategies, exactly one ``results`` event arrives
         followed by ``done``.
         """
+        if filters is not None and metadata_filter is None:
+            import warnings  # noqa: PLC0415
+
+            warnings.warn(
+                "AsyncZ3rnoClient.recall_stream_sse(filters=...) is deprecated; "
+                "use metadata_filter=... instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            metadata_filter = filters
+
         body: dict[str, Any] = {"agent_id": agent_id, "top_k": top_k}
         if query:
             body["query"] = query
         if memory_type:
             body["memory_type"] = memory_type
-        if filters:
-            body["filters"] = filters
+        if metadata_filter:
+            body["metadata_filter"] = metadata_filter
+        if user_id:
+            body["user_id"] = user_id
         if similarity_threshold > 0:
             body["similarity_threshold"] = similarity_threshold
         if time_range:
@@ -309,7 +341,9 @@ class AsyncZ3rnoClient:
         agent_id: str,
         query: str | None = None,
         memory_type: str | None = None,
-        filters: dict[str, Any] | None = None,
+        metadata_filter: dict[str, Any] | None = None,
+        filters: dict[str, Any] | None = None,  # deprecated alias
+        user_id: str | None = None,
         top_k: int = 10,
         similarity_threshold: float = 0.0,
         time_range: tuple[datetime, datetime] | None = None,
@@ -325,7 +359,9 @@ class AsyncZ3rnoClient:
             agent_id=agent_id,
             query=query,
             memory_type=memory_type,
+            metadata_filter=metadata_filter,
             filters=filters,
+            user_id=user_id,
             time_range=time_range,
             top_k=top_k,
             similarity_threshold=similarity_threshold,

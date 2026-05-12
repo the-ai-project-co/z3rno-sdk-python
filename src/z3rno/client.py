@@ -197,7 +197,15 @@ class Z3rnoClient:
         agent_id: str,
         query: str | None = None,
         memory_type: str | None = None,
+        # v0.21.2 — renamed from ``filters``. ``filters`` stays as a
+        # deprecated keyword alias below.
+        metadata_filter: dict[str, Any] | None = None,
+        # Deprecated alias for ``metadata_filter``. Emits a
+        # DeprecationWarning when used.
         filters: dict[str, Any] | None = None,
+        # v0.21.1 — scope by end-user id. Real WHERE predicate now,
+        # not just audit context.
+        user_id: str | None = None,
         top_k: int = 10,
         similarity_threshold: float = 0.0,
         time_range: tuple[datetime, datetime] | None = None,
@@ -221,13 +229,29 @@ class Z3rnoClient:
                 the strategy's top-K results. Requires the server to
                 have ``sentence-transformers`` installed.
         """
+        # v0.21.2 — honour the deprecated ``filters`` kwarg. ``metadata_filter``
+        # wins if both are passed.
+        if filters is not None and metadata_filter is None:
+            import warnings  # noqa: PLC0415
+
+            warnings.warn(
+                "Z3rnoClient.recall(filters=...) is deprecated; use "
+                "metadata_filter=... instead. ``filters`` will be removed in "
+                "a future release.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            metadata_filter = filters
+
         body: dict[str, Any] = {"agent_id": agent_id, "top_k": top_k}
         if query:
             body["query"] = query
         if memory_type:
             body["memory_type"] = memory_type
-        if filters:
-            body["filters"] = filters
+        if metadata_filter:
+            body["metadata_filter"] = metadata_filter
+        if user_id:
+            body["user_id"] = user_id
         if similarity_threshold > 0:
             body["similarity_threshold"] = similarity_threshold
         if time_range:
@@ -250,7 +274,9 @@ class Z3rnoClient:
         agent_id: str,
         query: str | None = None,
         memory_type: str | None = None,
-        filters: dict[str, Any] | None = None,
+        metadata_filter: dict[str, Any] | None = None,
+        filters: dict[str, Any] | None = None,  # deprecated alias
+        user_id: str | None = None,
         top_k: int = 10,
         similarity_threshold: float = 0.0,
         time_range: tuple[datetime, datetime] | None = None,
@@ -268,7 +294,9 @@ class Z3rnoClient:
             agent_id=agent_id,
             query=query,
             memory_type=memory_type,
+            metadata_filter=metadata_filter,
             filters=filters,
+            user_id=user_id,
             top_k=top_k,
             similarity_threshold=similarity_threshold,
             time_range=time_range,
