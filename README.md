@@ -3,6 +3,8 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/the-ai-project-co/z3rno-sdk-python/actions/workflows/ci.yml/badge.svg)](https://github.com/the-ai-project-co/z3rno-sdk-python/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/z3rno)](https://pypi.org/project/z3rno/)
+[![GitHub downloads](https://img.shields.io/github/downloads/the-ai-project-co/z3rno-sdk-python/total)](https://github.com/the-ai-project-co/z3rno-sdk-python/releases)
+[![PyPI downloads](https://static.pepy.tech/badge/z3rno)](https://pepy.tech/project/z3rno)
 
 Python SDK for Z3rno -- thin HTTP client for the Z3rno memory API.
 
